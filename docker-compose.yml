@@ -1,0 +1,40 @@
+version: "2.12.1"
+
+volumes:
+  mysql_config:
+  mysql_data:
+  
+services:
+  cariq-db:
+    container_name: cariq_db
+    image: mysql:8-oracle
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - mysql_config:/etc/mysql/conf.d
+    environment:
+      - "MYSQL_ROOT_PASSWORD="
+      - "MYSQL_ALLOW_EMPTY_PASSWORD=true"
+      - "MYSQL_USER=cariq_test"
+      - "MYSQL_PASSWORD=cariq_test"
+      - "MYSQL_DATABASE=cariq_test"
+    healthcheck:
+      test: "/usr/bin/mysql --user=cariq_test --password=cariq_test --execute \"SHOW DATABASES;\""
+      interval: 3s
+      timeout: 5s
+      retries: 5
+
+  api-service:
+    container_name: api_service
+    image: api-service:1.0
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    depends_on:
+      cariq-db:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    command: ["java", "-Dspring.profiles.active=docker", "-jar", "/test.jar"]
+  
